@@ -297,7 +297,7 @@ int _main(int argc, char **argv, char **envp){
   
   status = runRequest();
   //Display errors if any
-  readyerror();
+  readyerrorObfuscated();
 #ifdef MEASURETIME
    StopWatch_Stop("Ready!!!");
 #endif
