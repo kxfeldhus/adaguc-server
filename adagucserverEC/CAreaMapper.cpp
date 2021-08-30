@@ -85,25 +85,53 @@ void CAreaMapper::init(CDataSource *dataSource,CDrawImage *drawImage,int tileWid
   internalHeight =height;
 }
 
+bool CAreaMapper::dataSourceIsVector() {
+    return dataSource->getNumDataObjects()==2;
+}
+
+
 int CAreaMapper::drawTile(double *x_corners,double *y_corners,int &dDestX,int &dDestY){
-  CDFType dataType=dataSource->getDataObject(0)->cdfVariable->getType();
-  void *data=dataSource->getDataObject(0)->cdfVariable->data;
-  switch(dataType){
-    case CDF_CHAR  : return myDrawRawTile((const char*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-    case CDF_BYTE  : return myDrawRawTile((const char*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-    case CDF_UBYTE : return myDrawRawTile((const unsigned char*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-    case CDF_SHORT : return myDrawRawTile((const short*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-    case CDF_USHORT: return myDrawRawTile((const ushort*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-    case CDF_INT   : return myDrawRawTile((const int*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-    case CDF_UINT  : return myDrawRawTile((const uint*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-    case CDF_FLOAT : return myDrawRawTile((const float*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-    case CDF_DOUBLE: return myDrawRawTile((const double*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
-  }
-  return 1;
+    CDFType dataType=dataSource->getDataObject(0)->cdfVariable->getType();
+    if (dataSourceIsVector()){
+        void *uData=dataSource->getDataObject(0)->cdfVariable->data;
+        void *vData=dataSource->getDataObject(1)->cdfVariable->data;
+        switch(dataType){
+            case CDF_CHAR  : return myDrawRawTile((const char*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const char*)vData);break;
+            case CDF_BYTE  : return myDrawRawTile((const char*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const char*)vData);break;
+            case CDF_UBYTE : return myDrawRawTile((const unsigned char*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const unsigned char*)vData);break;
+            case CDF_SHORT : return myDrawRawTile((const short*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const short*)vData);break;
+            case CDF_USHORT: return myDrawRawTile((const ushort*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const ushort*)vData);break;
+            case CDF_INT   : return myDrawRawTile((const int*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const int*)vData);break;
+            case CDF_UINT  : return myDrawRawTile((const uint*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const uint*)vData);break;
+            case CDF_FLOAT : return myDrawRawTile((const float*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const float*)vData);break;
+            case CDF_DOUBLE: return myDrawRawTile((const double*)uData,dataType,x_corners,y_corners,dDestX,dDestY,true,(const double*)vData);break;
+        }
+    }
+    else {
+        void *data=dataSource->getDataObject(0)->cdfVariable->data;
+        switch(dataType){
+            case CDF_CHAR  : return myDrawRawTile((const char*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+            case CDF_BYTE  : return myDrawRawTile((const char*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+            case CDF_UBYTE : return myDrawRawTile((const unsigned char*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+            case CDF_SHORT : return myDrawRawTile((const short*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+            case CDF_USHORT: return myDrawRawTile((const ushort*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+            case CDF_INT   : return myDrawRawTile((const int*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+            case CDF_UINT  : return myDrawRawTile((const uint*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+            case CDF_FLOAT : return myDrawRawTile((const float*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+            case CDF_DOUBLE: return myDrawRawTile((const double*)data,dataType,x_corners,y_corners,dDestX,dDestY);break;
+        }
+    }
+    return 1;
 }
 
 template <class T>
-int CAreaMapper::myDrawRawTile(const T *data,CDFType dataType, double *x_corners,double *y_corners,int &dDestX,int &dDestY){
+int CAreaMapper::myDrawRawTile(const T *data,CDFType dataType, double *x_corners,double *y_corners,int &dDestX,int &dDestY) {
+    return myDrawRawTile(data, dataType, x_corners, y_corners, dDestX, dDestY, false, new T[0]);
+}
+
+
+template <class T>
+int CAreaMapper::myDrawRawTile(const T *data,CDFType dataType, double *x_corners,double *y_corners,int &dDestX,int &dDestY,bool calculateVectorStrength, const T *vData){
   // CDBDebug("dataType %d %s",dataType, CDF::getCDFDataTypeName(dataType).c_str());
   int imageWidth = drawImage->getWidth();
   int imageHeight = drawImage->getHeight();
@@ -139,8 +167,8 @@ int CAreaMapper::myDrawRawTile(const T *data,CDFType dataType, double *x_corners
   double destBoxTR[2] = {x_corners[0], y_corners[0]};
   double destBoxBL[2] = {x_corners[2], y_corners[2]};
   double destBoxBR[2] = {x_corners[1], y_corners[1]};
-  
-  
+
+
   double sourceBBOXWidth = dfImageBBOX[2] - dfImageBBOX[0];
   double sourceBBOXHeight = dfImageBBOX[1] - dfImageBBOX[3];
   double sourceWidth = double(width);
@@ -149,7 +177,7 @@ int CAreaMapper::myDrawRawTile(const T *data,CDFType dataType, double *x_corners
   double destPXTR[2] = {((destBoxTR[0] - dfImageBBOX[0]) / sourceBBOXWidth) * sourceWidth, ((destBoxTR[1] - dfImageBBOX[3]) / sourceBBOXHeight) * sourceHeight};
   double destPXBL[2] = {((destBoxBL[0] - dfImageBBOX[0]) / sourceBBOXWidth) * sourceWidth, ((destBoxBL[1] - dfImageBBOX[3]) / sourceBBOXHeight) * sourceHeight};
   double destPXBR[2] = {((destBoxBR[0] - dfImageBBOX[0]) / sourceBBOXWidth) * sourceWidth, ((destBoxBR[1] - dfImageBBOX[3]) / sourceBBOXHeight) * sourceHeight};
-  
+
   for(double dstpixel_y = 0.5;dstpixel_y < dfTileHeight + 0.5; dstpixel_y++){
     /* Calculate left and right ribs of source image, leftLineY  and rightLineY follow the ribs according to dstpixel_y */
     double leftLineA = (destPXBL[0]-destPXTL[0]) / (destPXBL[1]-destPXTL[1]);               // RC coefficient of left rib, (X2-X1)/(Y2-Y1) by (X = AY + B)
@@ -167,18 +195,28 @@ int CAreaMapper::myDrawRawTile(const T *data,CDFType dataType, double *x_corners
     double lineB = leftLineY - leftLineX * lineA;
     
     for(double dstpixel_x = 0.5;dstpixel_x < dfTileWidth + 0.5; dstpixel_x++){
-      
       double  dfSourceSampleX = (dstpixel_x/(dfTileWidth)) * (rightLineX-leftLineX) + leftLineX ;
       double  dfSourceSampleY = dfSourceSampleX * lineA + lineB ;
       int sourceSampleX = floor(dfSourceSampleX);
       int sourceSampleY = floor(dfSourceSampleY);
+
+      // We are seeing behavior where sourceSampleX is negative for the left most column for requested image sizes that are larger than the source dataset bounds.  It may also have to due with the the left most spatial bounds being negative like (-0.125) - Kyle
+      // The idea here is that the left most destination pixels are sources from the left most source column, instead of falling off and leaving the pixel blank.
+      // Minimal testing has been done here, we need to build some more comprehensive test cases before this goes upstream.
+        while( sourceSampleX<0 ) { sourceSampleX+=width; }
+        while( sourceSampleX>=width ){ sourceSampleX-=width; }
+
       int destPixelX = dstpixel_x + dDestX;
       int destPixelY = dstpixel_y + dDestY;
       if (sourceSampleX >= 0 && sourceSampleX < width && sourceSampleY >= 0 && sourceSampleY < height &&
         destPixelX >=0 && destPixelY>=0 && destPixelX < imageWidth && destPixelY< imageHeight) 
       {
         imgpointer=sourceSampleX+(sourceSampleY)*width;
-        val=data[imgpointer];
+        if (calculateVectorStrength){
+            val = sqrt(data[imgpointer]*data[imgpointer] + vData[imgpointer]*vData[imgpointer]);
+        } else {
+            val=data[imgpointer];
+        }
         isNodata=false;
         if(hasNodataValue){if(val==nodataValue)isNodata=true;}if(!(val==val))isNodata=true;
         if(!isNodata)if(legendValueRange)if(val<legendLowerRange||val>legendUpperRange)isNodata=true;

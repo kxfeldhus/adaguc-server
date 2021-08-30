@@ -51,6 +51,9 @@ private:
   bool debug;;
   template<typename T>
   int myDrawRawTile(const T *data,CDFType dataType, double *x_corners,double *y_corners,int &dDestX,int &dDestY);
+  template<typename T>
+  int myDrawRawTile(const T *data,CDFType dataType, double *x_corners,double *y_corners,int &dDestX,int &dDestY,bool calculateVectorStrength, const T *vData);
+  bool dataSourceIsVector();
 public:
   int drawTile(double *x_corners,double *y_corners,int &dDestX,int &dDestY);
   void init(CDataSource *dataSource,CDrawImage *drawImage,int tileWidth,int tileHeight);
